@@ -1,0 +1,2 @@
+Built-in imagegen tool prompt:
+Use case: illustration-story. Create a square image asset for a small round touchscreen: a cute Dogecoin meme inspired golden tan and cream corgi/Shiba-like dog, recognizable amused sideways glance, large upright ears, head and upper chest centered, charming polished cartoon illustration with soft shaded fur, crisp silhouette. Warm solid pale cream background #FFF4D6. Dog fully within central 80 percent of image, no cropping ears, no text, no letters, no watermark, no coin border. 1024x1024. Save image for use in embedded app.

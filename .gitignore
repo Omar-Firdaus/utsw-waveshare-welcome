@@ -1,0 +1,17 @@
+.DS_Store
+
+# Arduino build output
+work/build/
+work/build-doge/
+*.log
+
+# Local TTS runtime and voice model (re-downloadable)
+work/tts-runtime/
+work/vits-piper-en_US-lessac-medium/
+
+# Upstream clone: https://github.com/waveshareteam/ESP32-S3-Touch-LCD-1.85C
+work/waveshare-v2/
+
+# Scratch binaries
+work/test_pcm
+*.tmp
