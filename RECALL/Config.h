@@ -4,6 +4,12 @@
 // Bump on every build used with participants (addendum 8.6 version lock).
 #define RECALL_FIRMWARE_VERSION "0.1.0"
 
+// Bench build (scripts/build-recall.sh --bench): records to internal flash instead of the
+// microSD card and adds serial test commands. Never use a bench build with participants.
+#ifndef RECALL_BENCH
+#define RECALL_BENCH 0
+#endif
+
 namespace cfg {
 
 constexpr uint32_t SAMPLE_RATE = 44100;

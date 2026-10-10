@@ -1,7 +1,7 @@
 #include "Audio.h"
 #include "Config.h"
 #include "es7210.h"
-#include <SD_MMC.h>
+#include "Storage.h"
 #include <Wire.h>
 #include <atomic>
 #include <math.h>
@@ -159,7 +159,7 @@ IRAM_ATTR bool on_dma_overflow(i2s_chan_handle_t, i2s_event_data_t *, void *) {
 
 bool init_i2s(String &error) {
   i2s_chan_config_t channel = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
-  channel.dma_desc_num = 8;
+  channel.dma_desc_num = 16;  // 160 ms, covers flash-write stalls
   channel.dma_frame_num = CHUNK;
   i2s_std_config_t config = {};
   config.clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(cfg::SAMPLE_RATE);
@@ -354,7 +354,7 @@ void finalize() {
   wav.close();
   uint32_t size = 0;
   if (ok) {
-    File check = SD_MMC.open(wav_path, FILE_READ);
+    File check = storage_fs().open(wav_path, FILE_READ);
     uint8_t header[44] = {};
     if (!check) {
       ok = false;
@@ -470,7 +470,7 @@ bool audio_start(const char *path, const RecordingRules &rules, float threshold_
     return false;
   }
   wav_path = path;
-  wav = SD_MMC.open(path, FILE_WRITE);
+  wav = storage_fs().open(path, FILE_WRITE);
   uint8_t header[44];
   wav_header(header, 0);
   if (!wav || wav.write(header, 44) != 44) {

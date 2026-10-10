@@ -1,4 +1,5 @@
 #pragma once
+#include <Arduino.h>
 #include <lvgl.h>
 #include <functional>
 
@@ -31,5 +32,10 @@ void set_enabled(lv_obj_t *button, bool enabled);
 
 // Button actions run here, from loop(), never inside LVGL's event handling.
 void run_deferred();
+
+// Bench test hooks: press a visible button by its label, as a touch would (disabled
+// buttons do nothing), and describe what is on screen.
+bool press(const String &text, String &result);
+String describe();
 
 }  // namespace ui

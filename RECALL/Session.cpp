@@ -210,7 +210,8 @@ String log_json() {
   j.reserve(12000);
   j += "{\"schema\":\"recall-session-log/1\"";
   j += ",\n\"session_id\":" + q(s.id) + ",\n\"unit_id\":" + q(s.unit);
-  j += ",\n\"firmware_version\":" + q(RECALL_FIRMWARE_VERSION) + ",\"firmware_build\":" + q(__DATE__ " " __TIME__);
+  j += ",\n\"firmware_version\":" + q(RECALL_FIRMWARE_VERSION) + ",\"firmware_build\":" + q(__DATE__ " " __TIME__) +
+       ",\"bench_build\":" + flag(RECALL_BENCH) + ",\"storage\":" + q(storage_medium());
   j += ",\n\"status\":" + q(s.status) + ",\"end_reason\":" + reason_or_null(s.end_reason);
   j += ",\n\"clock\":{\"rtc_valid\":" + flag(s.rtc_valid) +
        ",\"session_created\":" + (s.rtc_valid ? q(rtc_iso(s.created)) : String("null")) +
@@ -689,7 +690,7 @@ void begin_session() {
     show_error(error, show_start);
     return;
   }
-  if (storage_free_bytes() < cfg::MIN_FREE_BYTES) {
+  if (storage_free_bytes() < storage_min_free()) {
     show_start();
     return;
   }
@@ -706,19 +707,22 @@ void show_start() {
   screen = Screen::Start;
   s.unit = storage_unit_id();
   lv_obj_t *scr = ui::screen();
-  ui::label(scr, "RECALL", &recall_font_28, ui::TEXT, 280, 0, -128);
+  if (RECALL_BENCH) ui::label(scr, "BENCH BUILD - NOT FOR STUDY USE", &lv_font_montserrat_14, ui::WARNING, 220, 0, -150);
+  ui::label(scr, "RECALL", &recall_font_28, ui::TEXT, 280, 0, -122);
 
   String error, sd;
   bool ready = hardware_error.isEmpty();
   bool card = storage_ready(error);
   if (card) {
     uint64_t free = storage_free_bytes();
-    char text[48];
-    if (free >= 10ull * 1024 * 1024 * 1024) snprintf(text, sizeof(text), "SD card: %.0f GB free", free / 1073741824.0);
-    else snprintf(text, sizeof(text), "SD card: %.0f MB free", free / 1048576.0);
+    const char *medium = RECALL_BENCH ? "Flash" : "SD card";
+    char text[64];
+    if (free >= 10ull * 1024 * 1024 * 1024) snprintf(text, sizeof(text), "%s: %.0f GB free", medium, free / 1073741824.0);
+    else snprintf(text, sizeof(text), "%s: %.1f MB free", medium, free / 1048576.0);
     sd = text;
-    if (free < cfg::MIN_FREE_BYTES) {
-      sd += " (need 40 MB)";
+    if (free < storage_min_free()) {
+      snprintf(text, sizeof(text), " (need %.0f MB)", storage_min_free() / 1048576.0);
+      sd += text;
       ready = false;
     }
   } else {

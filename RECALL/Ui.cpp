@@ -35,7 +35,7 @@ lv_obj_t *screen() {
 lv_obj_t *overlay() {
   lv_obj_t *panel = lv_obj_create(lv_scr_act());
   plain(panel);
-  lv_obj_add_flag(panel, LV_OBJ_FLAG_CLICKABLE);
+  lv_obj_add_flag(panel, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_USER_1);
   lv_obj_set_size(panel, LV_PCT(100), LV_PCT(100));
   lv_obj_set_style_bg_color(panel, lv_color_hex(PANEL), 0);
   lv_obj_set_style_bg_opa(panel, LV_OPA_COVER, 0);
@@ -107,6 +107,70 @@ void run_deferred() {
   deferred = nullptr;
   pending = false;
   if (action) action();
+}
+
+namespace {
+
+// The topmost overlay blocks touches to everything beneath it.
+lv_obj_t *touch_root() {
+  lv_obj_t *scr = lv_scr_act();
+  for (int i = int(lv_obj_get_child_cnt(scr)) - 1; i >= 0; --i) {
+    lv_obj_t *child = lv_obj_get_child(scr, i);
+    if (lv_obj_has_flag(child, LV_OBJ_FLAG_USER_1)) return child;
+  }
+  return scr;
+}
+
+const char *button_text(lv_obj_t *button) {
+  lv_obj_t *l = lv_obj_get_child(button, 0);
+  return l && lv_obj_check_type(l, &lv_label_class) ? lv_label_get_text(l) : "";
+}
+
+lv_obj_t *find_button(lv_obj_t *parent, const String &text) {
+  for (uint32_t i = 0; i < lv_obj_get_child_cnt(parent); ++i) {
+    lv_obj_t *child = lv_obj_get_child(parent, i);
+    if (lv_obj_has_flag(child, LV_OBJ_FLAG_HIDDEN)) continue;
+    if (lv_obj_check_type(child, &lv_btn_class) && text.equalsIgnoreCase(button_text(child))) return child;
+    if (lv_obj_t *found = find_button(child, text)) return found;
+  }
+  return nullptr;
+}
+
+void describe_into(lv_obj_t *parent, String &out) {
+  for (uint32_t i = 0; i < lv_obj_get_child_cnt(parent); ++i) {
+    lv_obj_t *child = lv_obj_get_child(parent, i);
+    if (lv_obj_has_flag(child, LV_OBJ_FLAG_HIDDEN)) continue;
+    if (lv_obj_check_type(child, &lv_btn_class)) {
+      out += String("[") + button_text(child) + (lv_obj_has_state(child, LV_STATE_DISABLED) ? " (disabled)]\n" : "]\n");
+    } else if (lv_obj_check_type(child, &lv_label_class)) {
+      out += String("| ") + lv_label_get_text(child) + "\n";
+    } else {
+      describe_into(child, out);
+    }
+  }
+}
+
+}  // namespace
+
+bool press(const String &text, String &result) {
+  lv_obj_t *button = find_button(touch_root(), text);
+  if (!button) {
+    result = "no visible button \"" + text + "\"";
+    return false;
+  }
+  if (lv_obj_has_state(button, LV_STATE_DISABLED)) {
+    result = "\"" + text + "\" is disabled; nothing happened";
+    return false;
+  }
+  lv_event_send(button, LV_EVENT_CLICKED, nullptr);
+  result = "pressed \"" + text + "\"";
+  return true;
+}
+
+String describe() {
+  String out;
+  describe_into(touch_root(), out);
+  return out;
 }
 
 }  // namespace ui
